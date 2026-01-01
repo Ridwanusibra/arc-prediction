@@ -16,7 +16,7 @@
 
 body { margin:0; font-family:'Inter', sans-serif; background:var(--bg); color:var(--text); overflow-x:hidden; }
 
-/* --- Landing Page --- */
+/* --- Pro Landing Page --- */
 #landing {
   position: fixed; inset:0; z-index:1000;
   background: radial-gradient(circle at 50% -20%, #1e1b4b 0%, #030712 80%);
@@ -47,12 +47,11 @@ body { margin:0; font-family:'Inter', sans-serif; background:var(--bg); color:va
 .ticker-val { color: var(--success); font-weight:800; font-family: monospace; font-size: 1rem; }
 @keyframes ticker { 0%{transform:translateX(0);} 100%{transform:translateX(-50%);} }
 
-/* --- Header --- */
+/* --- Main Interface --- */
 header { display:flex; justify-content:space-between; padding:1rem 5%; background: var(--glass); backdrop-filter: blur(25px); border-bottom:1px solid rgba(255,255,255,0.08); align-items:center; position:sticky; top:0; z-index:500; }
 .logo { font-weight:800; font-size:1.5rem; letter-spacing:-1.5px; display:flex; align-items:center; gap:10px; }
 .logo-dot { width:12px; height:12px; background: var(--primary); border-radius:50%; box-shadow:0 0 15px var(--primary); }
 
-/* --- Markets --- */
 .container { max-width:1200px; margin:3rem auto; padding:0 1.5rem; display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap:2rem; }
 .card { background: var(--card); border: 1px solid rgba(255,255,255,0.05); padding:1.75rem; border-radius:24px; transition: 0.3s ease; }
 .card:hover { border-color: var(--primary); background: #111b2e; transform: translateY(-4px); }
@@ -61,25 +60,27 @@ header { display:flex; justify-content:space-between; padding:1rem 5%; backgroun
 .market-image { width:60px; height:60px; border-radius:16px; object-fit:cover; border: 1px solid rgba(255,255,255,0.1); }
 .status-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 99px; background: rgba(16, 185, 129, 0.15); color: var(--success); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
-input, select { background:#030712; border:1px solid #334155; color:white; padding:1.1rem; border-radius:14px; margin:10px 0; width:100%; box-sizing:border-box; font-size:1rem; transition:0.2s; }
-input:focus, select:focus { border-color: var(--primary); outline:none; background: #080c16; }
+input { background:#030712; border:1px solid #334155; color:white; padding:1.1rem; border-radius:14px; margin:15px 0; width:100%; box-sizing:border-box; font-size:1rem; transition: 0.2s; }
+input:focus { border-color: var(--primary); outline:none; background: #080c16; }
 
-/* Activity Feed */
-#live-activity { position: fixed; bottom:30px; left:30px; background: #1e293b; border: 1px solid var(--primary);
+/* Activity Feed Popup */
+#live-activity {
+  position: fixed; bottom:30px; left:30px; background: #1e293b; border: 1px solid var(--primary);
   padding:12px 24px; border-radius:100px; font-size:0.9rem; display:flex; align-items:center; gap:12px;
-  z-index:1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display:none; }
+  z-index:1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display:none;
+}
 .pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 1.5s infinite; }
 @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 
-/* Toast */
 .toast { position:fixed; top:2rem; right:2rem; padding:1.2rem 2.5rem; border-radius:16px; z-index:2000; color:white; font-weight: 600; display:none; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+
+#app { display:none; } /* Main app container hidden until wallet connects */
 </style>
 </head>
 <body>
 
 <canvas id="particle-bg" style="position:fixed; inset:0; z-index:0;"></canvas>
 
-<!-- Landing -->
 <div id="landing">
   <div class="hero-content">
     <h1>Predict. <br/>Trade. Win.</h1>
@@ -93,6 +94,8 @@ input:focus, select:focus { border-color: var(--primary); outline:none; backgrou
       <span class="ticker-item">EPL: CHELSEA WIN <span class="ticker-val">34%</span></span>
       <span class="ticker-item">FED RATE CUT <span class="ticker-val">81%</span></span>
       <span class="ticker-item">ETH ETF INFLOW <span class="ticker-val">92%</span></span>
+      <span class="ticker-item">US ELECTION: CANDIDATE A <span class="ticker-val">52%</span></span>
+      <span class="ticker-item">BTC > $100k DEC <span class="ticker-val">68%</span></span>
     </div>
   </div>
 </div>
@@ -101,7 +104,7 @@ input:focus, select:focus { border-color: var(--primary); outline:none; backgrou
   <div class="logo"><div class="logo-dot"></div> ARC PREDICT</div>
   <div style="display:flex; align-items:center; gap:20px;">
     <span id="walletAddress" style="font-family: monospace; color: var(--text-dim); font-size: 0.9rem;"></span>
-    <button id="disconnectBtn" class="cta-btn" style="padding:0.6rem 1.4rem; display:none; background:#1e293b; font-size:0.85rem; border:1px solid rgba(255,255,255,0.1);">Disconnect</button>
+    <button id="disconnectBtn" class="cta-btn" style="padding:0.6rem 1.4rem; display:none; background:#1e293b; font-size:0.85rem; border: 1px solid rgba(255,255,255,0.1);">Disconnect</button>
   </div>
 </header>
 
@@ -111,14 +114,18 @@ input:focus, select:focus { border-color: var(--primary); outline:none; backgrou
 <div class="toast" id="toast" style="background:var(--success)"></div>
 <div class="toast" id="errorToast" style="background:var(--error)"></div>
 
-<script type="module">
-import detectEthereumProvider from 'https://cdn.jsdelivr.net/npm/@metamask/detect-provider/dist/detect-provider.esm.min.js';
-import { ethers } from 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.esm.min.js';
+<div id="app"></div> <!-- main app content will show here after wallet connects -->
 
-const CHAIN_ID = 5042002;
-const CONTRACT_ADDRESS = '0xeCCcF291a8B66e947c6f008D8C2a1A0CE203DAdc';
-const USDC_ADDRESS = '0x3600000000000000000000000000000000000000';
-const CONTRACT_ABI = [
+<!-- Ethers UMD -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const REQUIRED_CHAIN_ID = 5042002;
+  const CONTRACT_ADDRESS = "0xeCCcF291a8B66e947c6f008D8C2a1A0CE203DAdc";
+  const USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
+
+  // Paste your full ABI here
+  const CONTRACT_ABI = [
 	{
 		"inputs": [
 			{
@@ -823,77 +830,105 @@ const CONTRACT_ABI = [
 	}
 ];
 
-let provider, signer, contract, user;
+  const toastEl = id => document.getElementById(id);
+  const toast = (msg, isErr=false)=>{const el=toastEl(isErr?'errorToast':'toast'); el.textContent=msg; el.style.display='block'; setTimeout(()=>el.style.display='none',4000);}
+  let provider, signer, user, contract;
 
-const toast = (msg,isError=false)=>{
-  const el=document.getElementById(isError?'errorToast':'toast');
-  el.textContent=msg; el.style.display='block';
-  setTimeout(()=>el.style.display='none',4000);
-}
+  const landingConnectBtn = document.getElementById("landingConnectBtn");
+  const walletAddress = document.getElementById("walletAddress");
+  const disconnectBtn = document.getElementById("disconnectBtn");
 
-function getLogo(title){
-  title = title.toLowerCase();
-  if(title.includes('bitcoin')) return 'https://cryptologos.cc/logos/bitcoin-btc-logo.png';
-  if(title.includes('ethereum')) return 'https://cryptologos.cc/logos/ethereum-eth-logo.png';
-  if(title.includes('chelsea')) return 'https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg';
-  if(title.includes('arsenal')) return 'https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg';
-  if(title.includes('trump')) return 'https://upload.wikimedia.org/wikipedia/commons/5/56/Donald_Trump_official_portrait.jpg';
-  return `https://api.dicebear.com/7.x/identicon/svg?seed=${title}`;
-}
-
-async function connectWallet(){
-  const eth = await detectEthereumProvider();
-  if(!eth) return toast('MetaMask not detected',true);
-
-  provider = new ethers.providers.Web3Provider(eth);
-  const { chainId } = await provider.getNetwork();
-  if(chainId!==CHAIN_ID){
-    try { await eth.request({method:'wallet_switchEthereumChain', params:[{chainId:'0x'+CHAIN_ID.toString(16)}]}); }
-    catch(e){ return toast('Switch to Arc Testnet',true); }
+  async function connectWallet() {
+    if(!window.ethereum){ alert("Please install MetaMask"); return; }
+    try {
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      user = accounts[0];
+      signer = provider.getSigner();
+      const network = await provider.getNetwork();
+      if(network.chainId !== REQUIRED_CHAIN_ID){
+        try{
+          await window.ethereum.request({
+            method:"wallet_switchEthereumChain",
+            params:[{chainId:"0x"+REQUIRED_CHAIN_ID.toString(16)}]
+          });
+        }catch(e){
+          alert("Switch to Arc Testnet manually");
+          return;
+        }
+      }
+      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      walletAddress.innerText = user.slice(0,6) + "..." + user.slice(-4);
+      disconnectBtn.style.display = "inline-block";
+      document.getElementById("landing").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      loadMarkets();
+      simulateActivity();
+    } catch(e){
+      console.error(e);
+      alert("Connection failed: "+e.message);
+    }
   }
 
-  [user] = await provider.send('eth_requestAccounts',[]);
-  signer = provider.getSigner();
-  contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+  function disconnect(){ location.reload(); }
+  landingConnectBtn.addEventListener("click", connectWallet);
+  disconnectBtn.addEventListener("click", disconnect);
 
-  document.getElementById('landing').classList.add('hidden');
-  document.getElementById('disconnectBtn').style.display='inline-block';
-  document.getElementById('walletAddress').textContent=user.slice(0,6)+'...'+user.slice(-4);
+  // Auto reconnect
+  if(window.ethereum){
+    const accounts = await window.ethereum.request({method:"eth_accounts"});
+    if(accounts.length){
+      user = accounts[0];
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      walletAddress.innerText = user.slice(0,6) + "..." + user.slice(-4);
+      disconnectBtn.style.display = "inline-block";
+      document.getElementById("landing").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      loadMarkets();
+      simulateActivity();
+    }
+  }
 
-  loadMarkets();
-  simulateActivity();
-}
+  // Particle background
+  const canvas=document.getElementById('particle-bg'); const ctx=canvas.getContext('2d'); let w,h,particles=[];
+  function init(){ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; particles=Array.from({length:60},()=>({x:Math.random()*w,y:Math.random()*h,s:Math.random()*1.8,vx:Math.random()-0.5,vy:Math.random()-0.5})); }
+  function draw(){ ctx.clearRect(0,0,w,h); ctx.fillStyle="rgba(99,102,241,0.15)"; particles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,Math.PI*2);ctx.fill(); p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;}); requestAnimationFrame(draw);}
+  init(); draw(); window.onresize=init;
 
-// Simulated activity feed
-function simulateActivity(){
-  const actions=["bet 400 USDC on Trump","bet 2.5k USDC on ETH","claimed 800 USDC","placed a bet on Arsenal"];
-  const activity=document.getElementById('live-activity');
-  const text=document.getElementById('activity-text');
-  setInterval(()=>{
-    text.textContent=`Someone ${actions[Math.floor(Math.random()*actions.length)]}`;
-    activity.style.display='flex';
-    setTimeout(()=>activity.style.display='none',4000);
-  },10000);
-}
+  function simulateActivity(){
+    const actions=["bet 400 USDC on Trump","bet 2.5k USDC on ETH","claimed 800 USDC","placed a bet on Arsenal"];
+    const activity=document.getElementById('live-activity');
+    const text=document.getElementById('activity-text');
+    setInterval(()=>{
+      text.textContent=`Someone ${actions[Math.floor(Math.random()*actions.length)]}`;
+      activity.style.display='flex';
+      setTimeout(()=>activity.style.display='none',4000);
+    },10000);
+  }
 
-async function loadMarkets() {
-  const container = document.getElementById('marketsContainer');
-  container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:5rem;color:var(--text-dim)">Loading decentralized data...</div>';
+  function getLogo(title){
+    title = title.toLowerCase();
+    if(title.includes('bitcoin')) return 'https://cryptologos.cc/logos/bitcoin-btc-logo.png';
+    if(title.includes('ethereum')) return 'https://cryptologos.cc/logos/ethereum-eth-logo.png';
+    if(title.includes('chelsea')) return 'https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg';
+    if(title.includes('arsenal')) return 'https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg';
+    if(title.includes('trump')) return 'https://upload.wikimedia.org/wikipedia/commons/5/56/Donald_Trump_official_portrait.jpg';
+    return `https://api.dicebear.com/7.x/identicon/svg?seed=${title}`;
+  }
 
-  try {
-    const count = await contract.getMarketCount();
-    container.innerHTML = '';
-
-    for(let i=0;i<count;i++){
-      const m = await contract.getMarket(i);
-      const yesPool = await contract.yesPool();
-      const noPool = await contract.noPool();
-
-      const card=document.createElement('div');
-      card.className='card';
-      const img = getLogo(m.title);
-
-      card.innerHTML=`
+  async function loadMarkets(){
+    const container=document.getElementById('marketsContainer');
+    container.innerHTML='<div style="grid-column: 1/-1; text-align:center; padding: 5rem; color:var(--text-dim)">Loading decentralized data...</div>';
+    try{
+      const count = await contract.getMarketCount();
+      container.innerHTML='';
+      for(let i=0;i<count;i++){
+        const m=await contract.getMarket(i);
+        const card=document.createElement('div'); card.className='card';
+        const img=getLogo(m.title);
+        card.innerHTML=`
         <div class="market-header">
           <img src="${img}" class="market-image"/>
           <div style="flex:1">
@@ -901,54 +936,28 @@ async function loadMarkets() {
             <h3 style="margin:5px 0 0 0;font-size:1.15rem;letter-spacing:-0.5px">${m.title}</h3>
           </div>
         </div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-          <span>Yes Pool: ${ethers.utils.formatUnits(yesPool,6)} USDC</span>
-          <span>No Pool: ${ethers.utils.formatUnits(noPool,6)} USDC</span>
-        </div>
         <input type="number" id="input${i}" placeholder="USDC Amount"/>
-        <select id="side${i}">
-          <option value="true">Price Will Increase</option>
-          <option value="false">Price Will Decrease</option>
-        </select>
         <button class="cta-btn" style="width:100%;padding:0.9rem;border-radius:12px;font-size:1rem;" id="btn${i}">Place Trade</button>
-      `;
-      container.appendChild(card);
-
-      document.getElementById(`btn${i}`).onclick = async () => {
-        const amount = document.getElementById(`input${i}`).value;
-        const side = document.getElementById(`side${i}`).value === 'true';
-        await placeBet(i, amount, side);
-      };
-    }
-  } catch(e){
-    console.error(e);
-    container.innerHTML = '<p>Failed to load markets. Check console.</p>';
+        `;
+        container.appendChild(card);
+        document.getElementById(`btn${i}`).onclick=()=>placeBet(i, document.getElementById(`input${i}`).value);
+      }
+    }catch(e){ container.innerHTML='<p>Market Sync Failed. Check Connection.</p>'; console.error(e); }
   }
-}
 
-// Place bet
-async function placeBet(id, amount, willIncrease){
-  if(!amount || amount <= 0) return toast('Enter valid USDC amount',true);
-  try{
-    const val = ethers.utils.parseUnits(amount,6);
-    toast('Waiting for Wallet Signature...');
-    const deadline = Math.floor(Date.now()/1000) + 3600; // 1 hour
-    const tx = await contract.predict(willIncrease,val,deadline,0,0);
-    await tx.wait();
-    toast('Transaction Successful!');
-    loadMarkets();
-  } catch(e){ toast(e.reason||'Transaction Rejected',true); }
-}
+  async function placeBet(id,amount){
+    if(!amount||amount<=0) return toast('Enter valid USDC amount',true);
+    try{
+      const val=ethers.utils.parseUnits(amount,6);
+      toast('Waiting for Wallet Signature...');
+      const tx=await contract.predict(id,val);
+      await tx.wait();
+      toast('Transaction Successful!');
+      loadMarkets();
+    }catch(e){ toast(e.reason||'Transaction Rejected',true); console.error(e); }
+  }
 
-document.getElementById('landingConnectBtn').onclick = connectWallet;
-document.getElementById('disconnectBtn').onclick = ()=>location.reload();
-
-// Particle Engine
-const canvas=document.getElementById('particle-bg'); const ctx=canvas.getContext('2d'); let w,h,particles=[];
-function init(){ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; particles=Array.from({length:60},()=>({x:Math.random()*w,y:Math.random()*h,s:Math.random()*1.8,vx:Math.random()-0.5,vy:Math.random()-0.5})); }
-function draw(){ ctx.clearRect(0,0,w,h); ctx.fillStyle="rgba(99,102,241,0.15)"; particles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,Math.PI*2);ctx.fill(); p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;}); requestAnimationFrame(draw);}
-init(); draw(); window.onresize=init;
+});
 </script>
-
 </body>
 </html>
