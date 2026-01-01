@@ -1,138 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arc Market - Dynamic Predictions</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Arc Prediction</title>
 <style>
 :root {
-  --accent:#00ffd6;
-  --bg-dark:#121212;
-  --card-dark:#1e1e1e;
-  --text-light:#fff;
-  --text-muted:#aaa;
-  --toast-bg:rgba(0,0,0,0.85);
+  --primary:#4f46e5; --bg:#111827; --card:#1f2937;
+  --text:#f9fafb; --error:#ef4444; --success:#10b981;
 }
-
-*{box-sizing:border-box;margin:0;padding:0;font-family:sans-serif;}
-body{background:var(--bg-dark);color:var(--text-light);min-height:100vh;}
-
-header{
-  position:sticky;top:0;backdrop-filter:blur(10px);
-  background:rgba(18,18,18,0.9);padding:1rem;
-  display:flex;justify-content:space-between;align-items:center;z-index:100;
-}
-header h1{font-size:1.5rem;}
-button{background:var(--accent);border:none;padding:0.5rem 1rem;color:#000;border-radius:0.5rem;cursor:pointer;}
-button:disabled{opacity:0.6;cursor:not-allowed;}
-
-.market-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
-  gap:1rem;padding:1rem;
-}
-.market-card{
-  background:var(--card-dark);padding:1rem;border-radius:1rem;
-  transition:transform 0.2s,box-shadow 0.2s;cursor:pointer;
-}
-.market-card:hover{transform:translateY(-5px);box-shadow:0 4px 20px rgba(0,0,0,0.5);}
-
-.market-header{display:flex;justify-content:space-between;margin-bottom:0.5rem;}
-.status-open{color:#0f0;font-weight:bold;}
-.status-closed{color:#f00;font-weight:bold;}
-.status-resolved{color:#00f;font-weight:bold;}
-
-.probability-bar{background:#333;height:1rem;border-radius:0.5rem;overflow:hidden;margin-top:0.5rem;}
-.probability-fill{height:100%;border-radius:0.5rem 0 0 0.5rem;background:linear-gradient(to right,#00ffb0,#00ffd6);}
-
-.toast{
-  position:fixed;bottom:1rem;right:1rem;background:var(--toast-bg);
-  padding:1rem 1.5rem;border-radius:1rem;display:flex;align-items:center;
-  opacity:0;transition:opacity 0.3s;color:#fff;z-index:200;
-}
-.toast.show{opacity:1;}
-.toast span{margin-left:0.5rem;}
-.toast.success{border-left:4px solid #0f0;}
-.toast.error{border-left:4px solid #f00;}
-
-.modal{
-  position:fixed;top:0;left:0;width:100%;height:100%;display:none;
-  background:rgba(0,0,0,0.75);justify-content:center;align-items:center;z-index:300;
-}
-.modal.active{display:flex;}
-.modal-content{
-  background:var(--card-dark);padding:2rem;border-radius:1rem;max-width:500px;width:90%;
-  position:relative;
-}
-.modal-content h2{margin-bottom:1rem;}
-.modal-content .close-btn{position:absolute;top:1rem;right:1rem;cursor:pointer;font-size:1.5rem;}
-
-.bet-tabs{display:flex;gap:1rem;margin:1rem 0;}
-.bet-tab{flex:1;text-align:center;padding:0.5rem;border-radius:0.5rem;border:1px solid var(--text-muted);cursor:pointer;}
-.bet-tab.active{border-color:var(--accent);background:rgba(0,255,214,0.1);}
-
-.quick-bets{display:flex;gap:0.5rem;margin-bottom:1rem;}
-.quick-bets button{flex:1;}
-
-input[type=number]{width:100%;padding:0.5rem;border-radius:0.5rem;border:none;margin-bottom:1rem;}
-.focus-visible:focus{outline:2px solid var(--accent);outline-offset:2px;}
-
-.loading{display:flex;flex-direction:column;align-items:center;gap:0.5rem;color:var(--text-muted);}
-.loading .spinner{border:4px solid #333;border-top:4px solid var(--accent);border-radius:50%;width:30px;height:30px;animation:spin 1s linear infinite;}
-@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
-
-.countdown{font-size:0.9rem;color:var(--text-muted);}
+body{margin:0;font-family:sans-serif;background:var(--bg);color:var(--text);}
+header{display:flex;justify-content:space-between;padding:1rem;background:var(--card);}
+button{padding:.5rem 1rem;border:none;border-radius:6px;cursor:pointer;}
+button:disabled{opacity:.5;cursor:not-allowed;}
+.card{background:var(--card);margin:1rem;padding:1rem;border-radius:8px;}
+.toast{position:fixed;top:1rem;right:1rem;padding:.5rem 1rem;border-radius:6px;display:none;color:#fff;}
+#toast{background:var(--success);}
+#errorToast{background:var(--error);}
+input,select{width:100%;margin:.5rem 0;padding:.5rem;border-radius:4px;border:none;}
+hr{border:1px solid #374151;margin:1rem 0;}
 </style>
 </head>
 <body>
-
 <header>
-  <h1>Arc Market</h1>
-  <button id="walletBtn" aria-label="Connect wallet">Connect Wallet</button>
+  <h2>Arc Prediction Market</h2>
+  <div>
+    <button id="walletBtn">Connect Wallet</button>
+    <button id="disconnectBtn" style="display:none">Disconnect</button>
+  </div>
 </header>
 
-<div class="market-grid" id="marketsGrid">
-  <div class="loading"><div class="spinner"></div>Loading markets...</div>
+<div class="card" id="marketCard" style="display:none">
+  <h3 id="status"></h3>
+  <p>Yes Pool: <span id="yesPool">0</span> USDC</p>
+  <p>No Pool: <span id="noPool">0</span> USDC</p>
+  <p>Implied Odds — Yes: <span id="yesOdds">0</span>% | No: <span id="noOdds">0</span>%</p>
+  <p>Fee: <span id="fee">0</span> USDC</p>
+  <p>Closes In: <span id="countdown">--</span></p>
+
+  <select id="direction">
+    <option value="true">Price Will Increase</option>
+    <option value="false">Price Will Decrease</option>
+  </select>
+
+  <input type="number" id="amount" placeholder="Bet amount (USDC)" min="0" />
+  <button id="betBtn" disabled>Place Bet</button>
+
+  <hr />
+  <h4>Your Bets</h4>
+  <div id="userBets">None</div>
 </div>
 
-<div id="toast" class="toast"><span id="toastIcon"></span><span id="toastMessage"></span></div>
-
-<div class="modal" id="marketModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-  <div class="modal-content">
-    <span class="close-btn" onclick="closeModal()">×</span>
-    <h2 id="modalTitle">Market Title</h2>
-    <p id="modalStatus">Status</p>
-
-    <div class="user-bet" id="userPosition" style="display:none;">
-      <p>Your bet: <span id="userBetAmount">0</span> USDC</p>
-    </div>
-
-    <div class="bet-tabs">
-      <div class="bet-tab active" data-side="yes" onclick="selectBetSide('yes')">YES</div>
-      <div class="bet-tab" data-side="no" onclick="selectBetSide('no')">NO</div>
-    </div>
-
-    <div class="quick-bets">
-      <button onclick="setBetAmount(10)">10</button>
-      <button onclick="setBetAmount(50)">50</button>
-      <button onclick="setBetAmount(100)">100</button>
-      <button onclick="setBetAmount(500)">500</button>
-    </div>
-
-    <input id="betAmount" type="number" placeholder="Enter amount" min="1">
-    <div>
-      <p>Fee: <span id="displayFee">0</span> USDC</p>
-      <p>Projected Payout: <span id="displayPayout">0</span> USDC</p>
-    </div>
-    <button id="placeBetBtn" onclick="placeBet()" disabled>Place Bet</button>
-  </div>
+<div class="card" id="adminCard" style="display:none">
+  <h3>Oracle / Admin</h3>
+  <input type="number" id="oraclePrice" placeholder="Submit price" />
+  <button id="submitPriceBtn">Submit Price</button>
+  <button id="endBtn">End Prediction</button>
+  <button id="settleBtn">Settle Bets</button>
 </div>
 
-<script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
-<script>
-const CONTRACT_ADDRESS = "0xeCCcF291a8B66e947c6f008D8C2a1A0CE203DAdc";
-const USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
-const CHAIN_ID = 5042002; // Arc Testnet
-const CONTRACT_ABI = [
+<div class="toast" id="toast"></div>
+<div class="toast" id="errorToast"></div>
+
+<script type="module">
+import detectEthereumProvider from 'https://cdn.jsdelivr.net/npm/@metamask/detect-provider/dist/detect-provider.esm.min.js';
+import { ethers } from 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.esm.min.js';
+
+const CHAIN_ID = 5042002;
+const CONTRACT_ADDRESS = '0xeCCcF291a8B66e947c6f008D8C2a1A0CE203DAdc';
+const USDC_ADDRESS = '0x3600000000000000000000000000000000000000';
+const ABI = [
 	{
 		"inputs": [
 			{
@@ -835,135 +772,148 @@ const CONTRACT_ABI = [
 		"stateMutability": "view",
 		"type": "function"
 	}
-]; // paste your ABI here
+];
 
-let provider, signer, contract, usdcContract, userAddress;
-let currentSide='yes', currentMarket=null;
-let countdownIntervals={};
+let provider, signer, contract, usdc, user, countdownTimer;
 
-// Toast
-function showToast(message,type='success'){
-  const toast=document.getElementById('toast');
-  toast.className=`toast ${type} show`;
-  toast.querySelector('#toastMessage').textContent=message;
-  toast.querySelector('#toastIcon').textContent=type==='success'?'✓':'✗';
-  setTimeout(()=>{toast.classList.remove('show');},4000);
+// ---- Toast function ----
+const toast=(msg,error=false)=>{
+  const el=document.getElementById(error?'errorToast':'toast');
+  el.textContent=msg; el.style.display='block';
+  setTimeout(()=>el.style.display='none',3000);
+};
+
+// ---- Wallet ----
+async function connect(){
+  const eth = await detectEthereumProvider({mustBeMetaMask:true});
+  if(!eth) return toast('Install MetaMask', true);
+  provider = new ethers.providers.Web3Provider(eth);
+  const net = await provider.getNetwork();
+  if(net.chainId!==CHAIN_ID) return toast('Switch to Arc Testnet', true);
+  [user] = await provider.send('eth_requestAccounts',[]);
+  signer = provider.getSigner();
+  contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+  usdc = new ethers.Contract(USDC_ADDRESS, [
+    'function balanceOf(address)view returns(uint256)',
+    'function allowance(address,address)view returns(uint256)',
+    'function approve(address,uint256)'
+  ], signer);
+
+  document.getElementById('walletBtn').style.display='none';
+  document.getElementById('disconnectBtn').style.display='inline-block';
+  document.getElementById('marketCard').style.display='block';
+
+  await load();
+  subscribeEvents();
 }
 
-// Wallet
-async function connectWallet(){
-  if(!window.ethereum){ showToast('Install MetaMask','error'); return; }
-  try{
-    const accounts=await window.ethereum.request({method:'eth_requestAccounts'});
-    userAddress=accounts[0];
-    provider=new ethers.providers.Web3Provider(window.ethereum);
-    const network=await provider.getNetwork();
-    if(network.chainId!==CHAIN_ID){ showToast('Switch to Arc Testnet','error'); return; }
-    signer=provider.getSigner();
-    contract=new ethers.Contract(CONTRACT_ADDRESS,CONTRACT_ABI,signer);
-    usdcContract=new ethers.Contract(USDC_ADDRESS,['function balanceOf(address) view returns(uint256)','function approve(address,uint256) returns(bool)','function allowance(address,address) view returns(uint256)'],signer);
-    document.getElementById('walletBtn').textContent=userAddress.slice(0,6)+'...'+userAddress.slice(-4);
-    document.getElementById('placeBetBtn').disabled=false;
-    showToast('Wallet connected!');
-    loadMarkets();
-  }catch(e){ console.error(e); showToast('Connection failed','error'); }
-}
+function disconnect(){location.reload();}
 
-// Load all active markets
-async function loadMarkets(){
-  const grid=document.getElementById('marketsGrid');
-  grid.innerHTML='<div class="loading"><div class="spinner"></div>Loading markets...</div>';
-  try{
-    const lastTime = await contract.lastPredictionTime();
-    const duration = await contract.predictionDuration();
-    const predictionEnded = await contract.isPredictionEnded();
-    const yesPool = await contract.yesPool();
-    const noPool = await contract.noPool();
+// ---- Load market & user info ----
+async function load(){
+  try {
+    const [yes,no,end,last,dur,feeBP,owner,isOracle] = await Promise.all([
+      contract.yesPool(), contract.noPool(), contract.isPredictionEnded(),
+      contract.lastPredictionTime(), contract.predictionDuration(),
+      contract.feePercentage(), contract.owner(), contract.isOracle(user)
+    ]);
 
-    // For now, one active prediction; can extend for multiple by reading events
-    const market = {
-      id: lastTime.toString(),
-      question: "Will price increase?",
-      yesPool: yesPool,
-      noPool: noPool,
-      closeTime: parseInt(lastTime) + parseInt(duration),
-      status: predictionEnded ? 'Resolved' : 'Open'
+    const yesNum=Number(ethers.utils.formatUnits(yes,6));
+    const noNum=Number(ethers.utils.formatUnits(no,6));
+    const total=yesNum+noNum || 1;
+
+    document.getElementById('yesPool').textContent=yesNum.toFixed(2);
+    document.getElementById('noPool').textContent=noNum.toFixed(2);
+    document.getElementById('yesOdds').textContent=((yesNum/total)*100).toFixed(1);
+    document.getElementById('noOdds').textContent=((noNum/total)*100).toFixed(1);
+    document.getElementById('status').textContent=end?'Market Closed':'Market Open';
+    document.getElementById('adminCard').style.display = (user===owner||isOracle)?'block':'none';
+
+    startCountdown(last.add(dur).toNumber());
+
+    const amountEl = document.getElementById('amount');
+    amountEl.oninput = async e => {
+      const v=Number(e.target.value||0);
+      document.getElementById('fee').textContent=((v*feeBP)/10000).toFixed(6);
+      document.getElementById('betBtn').disabled = !(v>0 && !end);
+
+      // Potential PnL preview
+      const dir=document.getElementById('direction').value==='true';
+      const payout = await pnlPreview(dir, ethers.utils.parseUnits(v||'0',6));
+      document.getElementById('userBets').innerHTML=`Potential Payout: ${payout} USDC`;
     };
 
-    grid.innerHTML='';
-    const total = yesPool.add(noPool);
-    const probYes = total.eq(0) ? 50 : yesPool.mul(100).div(total).toNumber();
-
-    const card = document.createElement('div');
-    card.className='market-card';
-    card.innerHTML=`
-      <div class="market-header">
-        <span class="market-status status-${market.status.toLowerCase()}">${market.status}</span>
-        <span class="countdown" id="countdown-${market.id}">--:--</span>
-      </div>
-      <p>${market.question}</p>
-      <div class="probability-bar"><div class="probability-fill" style="width:${probYes}%"></div></div>
-      <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
-        <span>${probYes}% YES</span><span>${100-probYes}% NO</span>
-      </div>
-    `;
-    card.onclick=()=>openMarketModal(market);
-    grid.appendChild(card);
-
-    startCountdown(market.id, market.closeTime);
-
-  }catch(e){ console.error(e); grid.innerHTML='<p>Error loading markets</p>'; }
+    await loadUserBets();
+  } catch(e){ console.error(e); toast('Load failed', true); }
 }
 
-// Countdown
-function startCountdown(id, closeTime){
-  const elem=document.getElementById('countdown-'+id);
-  if(!elem) return;
-  if(countdownIntervals[id]) clearInterval(countdownIntervals[id]);
-  countdownIntervals[id]=setInterval(()=>{
-    const diff=closeTime-Math.floor(Date.now()/1000);
-    if(diff<=0){ elem.textContent='Ended'; clearInterval(countdownIntervals[id]); return; }
-    const min=Math.floor(diff/60); const sec=diff%60;
-    elem.textContent=`${min}m ${sec}s`;
+async function loadUserBets(){
+  const bets = await contract.getUserBets(user);
+  const el = document.getElementById('userBets');
+  if(!bets.length) return el.textContent='No bets yet';
+  el.innerHTML = bets.map(b=>`• ${ethers.utils.formatUnits(b.amount,6)} USDC on ${b.willPriceIncrease?'YES':'NO'}`).join('<br>');
+}
+
+// ---- Countdown ----
+function startCountdown(end){
+  clearInterval(countdownTimer);
+  const el = document.getElementById('countdown');
+  countdownTimer = setInterval(()=>{
+    const d = end - Math.floor(Date.now()/1000);
+    if(d<=0){el.textContent='Ended'; clearInterval(countdownTimer); return;}
+    el.textContent = `${Math.floor(d/60)}m ${d%60}s`;
   },1000);
 }
 
-// Modal
-function openMarketModal(market){
-  currentMarket=market;
-  document.getElementById('marketModal').classList.add('active');
-  document.getElementById('modalTitle').textContent=market.question;
-  document.getElementById('modalStatus').textContent=market.status;
-  document.getElementById('userPosition').style.display='none';
-}
-function closeModal(){ document.getElementById('marketModal').classList.remove('active'); }
-
-// Betting
-function selectBetSide(side){
-  currentSide=side;
-  document.querySelectorAll('.bet-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelector(`.bet-tab[data-side="${side}"]`).classList.add('active');
-}
-function setBetAmount(amount){ document.getElementById('betAmount').value=amount; }
-
-async function placeBet(){
-  if(!userAddress){ showToast('Connect wallet first','error'); return; }
-  const amount=ethers.utils.parseUnits(document.getElementById('betAmount').value||'0',6);
-  if(amount.lte(0)){ showToast('Enter valid amount','error'); return; }
+// ---- Bet ----
+async function bet(){
   try{
-    const allowance=await usdcContract.allowance(userAddress,CONTRACT_ADDRESS);
-    if(allowance.lt(amount)){
-      await (await usdcContract.approve(CONTRACT_ADDRESS,ethers.constants.MaxUint256)).wait();
-      showToast('USDC approved');
-    }
-    await (await contract.predict(currentSide==='yes', amount, Math.floor(Date.now()/1000)+600,0,ethers.constants.MaxUint256)).wait();
-    showToast('Bet placed!');
-    closeModal(); loadMarkets();
-  }catch(e){ console.error(e); showToast(e.reason||'Transaction failed','error'); }
+    const amt=ethers.utils.parseUnits(document.getElementById('amount').value,6);
+    const dir=document.getElementById('direction').value==='true';
+    const deadline=(await contract.lastPredictionTime()).add(await contract.predictionDuration());
+    const allowance=await usdc.allowance(user,CONTRACT_ADDRESS);
+    if(allowance.lt(amt)) await (await usdc.approve(CONTRACT_ADDRESS,amt)).wait();
+    await (await contract.predict(dir,amt,deadline,0,ethers.constants.MaxUint256)).wait();
+    toast('Bet placed'); await load();
+  } catch(e){ console.error(e); toast('Bet failed', true); }
 }
 
-document.getElementById('walletBtn').onclick=connectWallet;
-setInterval(()=>loadMarkets(),10000); // live updates every 10s
+// ---- PnL Preview ----
+async function pnlPreview(dir, amt){
+  const yes=await contract.yesPool();
+  const no=await contract.noPool();
+  const y=Number(ethers.utils.formatUnits(yes,6));
+  const n=Number(ethers.utils.formatUnits(no,6));
+  const a=Number(ethers.utils.formatUnits(amt,6));
+  const total=y+n+a;
+  const winPool=dir?y+a:n+a;
+  if(winPool===0) return '0';
+  const payout=(a/total)*total; // simplified
+  return payout.toFixed(6);
+}
+
+// ---- Admin ----
+async function submitPrice(){ try{ const p=document.getElementById('oraclePrice').value; if(!p) return; await (await contract.submitPrice(p)).wait(); toast('Price submitted'); }catch(e){toast('Submit failed', true);} }
+async function endPrediction(){ try{ await (await contract.endPrediction()).wait(); toast('Prediction ended'); await load(); }catch(e){toast('End failed',true);} }
+async function settle(){ try{ await (await contract.settleBets()).wait(); toast('Bets settled'); await load(); }catch(e){toast('Settle failed',true);} }
+
+// ---- Event subscriptions ----
+function subscribeEvents(){
+  contract.on('BetPlaced', load);
+  contract.on('PredictionEnded', load);
+  contract.on('BetSettled', load);
+}
+
+// ---- Button bindings ----
+walletBtn.onclick=connect;
+disconnectBtn.onclick=disconnect;
+betBtn.onclick=bet;
+submitPriceBtn.onclick=submitPrice;
+endBtn.onclick=endPrediction;
+settleBtn.onclick=settle;
+
+// ---- Auto-refresh ----
+setInterval(()=>user&&load(),15000);
 </script>
 </body>
 </html>
